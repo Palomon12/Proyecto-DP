@@ -1,5 +1,11 @@
 package CampoCodigo;
 
+import CampoCodigo.builders.CategoriaBuilder;
+import CampoCodigo.builders.EnvioBuilder;
+import CampoCodigo.builders.PagoBuilder;
+import CampoCodigo.builders.PedidoBuilder;
+import CampoCodigo.builders.ProductoBuilder;
+import CampoCodigo.builders.UsuarioBuilder;
 import ClasesDAO.*;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -28,11 +34,13 @@ public class Administrador {
         iniciarTienda();
 
         if (!preguntarSiTieneCuenta()) {
-        registrarUsuario();
-    } else if (!iniciarSesion()) {
-        System.out.println("Error en el inicio de sesión. Saliendo...");
-        return;
-    }
+            registrarUsuario();
+        } else if (!iniciarSesion()) {
+            System.out.println("Error en el inicio de sesión. Saliendo...");
+            return;
+        }
+
+        AccesoAdministrador proxy = new AdministradorProxy(usuarioActual);
 
         boolean salir = false;
         while (!salir) {
@@ -43,31 +51,23 @@ public class Administrador {
             switch (opcion) {
                 case 1 -> {
                     if (esAdmin) {
-                        gestionarProductos();
+                        proxy.gestionarProductos();
                     } else {
                         verCarrito();
                     }
                 }
                 case 2 -> {
                     if (esAdmin) {
-                        gestionarCategorias();
+                        proxy.gestionarCategorias();
                     } else {
                         realizarCompra();
                     }
                 }
                 case 3 -> {
-                    if (esAdmin) {
-                        gestionarUsuarios();
-                    } else {
-                        System.out.println("Acceso denegado. Solo para administradores.");
-                    }
+                    proxy.gestionarUsuarios();
                 }
                 case 4 -> {
-                    if (esAdmin) {
-                        generarInforme();
-                    } else {
-                        System.out.println("Acceso denegado. Solo para administradores.");
-                    }
+                    proxy.generarInforme();
                 }
                 case 6 -> {
                     salir = true;
@@ -78,7 +78,7 @@ public class Administrador {
             }
         }
     }
-    
+
     private static void mostrarMenu() {
         System.out.println("\n--- Menú Principal ---");
         if (esAdmin) {
@@ -93,7 +93,6 @@ public class Administrador {
         System.out.println("6. Salir");
         System.out.print("Seleccione una opción: ");
     }
-
 
     private static void registrarUsuario() throws SQLException {
         System.out.println("\n--- Registro de Usuario ---");
@@ -153,8 +152,16 @@ public class Administrador {
 
         int telefonoInt = Integer.parseInt(telefono);
 
-        Usuario nuevoUsuario = new Usuario(0, nombre, correo, contraseña, tipo, direccion, telefonoInt);
-        UsuarioDAO usuarioDAO = new UsuarioDAO();
+        // Crear nuevo usuario con Builder
+        Usuario nuevoUsuario = new UsuarioBuilder()
+                .setId(0)
+                .setNombre(nombre)
+                .setEmail(correo)
+                .setContraseña(contraseña)
+                .setTipo(tipo)
+                .setDireccion(direccion)
+                .setTelefono(telefonoInt)
+                .build();
 
         // Registrar usuario
         if (usuarioDAO.crear(nuevoUsuario)) {
@@ -174,8 +181,14 @@ public class Administrador {
     }
 
     private static boolean preguntarSiTieneCuenta() {
+        // Siempre limpiar el buffer ANTES si venimos de un nextInt()
+        if (scanner.hasNextLine()) {
+            scanner.nextLine();
+        }
+
         System.out.print("\n**Cuenta administrador**: \nCorreo: kpalomino233@gmail.com\nContraseña: Mimamamemima123 \n¿Tiene una cuenta? (s/n): ");
-        String respuesta = scanner.nextLine();
+        String respuesta = scanner.nextLine().trim();  // trim() elimina espacios
+
         return respuesta.equalsIgnoreCase("s");
     }
 
@@ -218,6 +231,18 @@ public class Administrador {
             if (esAdministrador.test(correo, password)) {
                 mostrarMensaje.accept("¡Inicio de sesión como administrador exitoso!");
                 esAdmin = true;
+
+                // 🔧 Asegúrate de crear un objeto Usuario con tipo Admin:
+                usuarioActual = new UsuarioBuilder()
+                        .setId(0)
+                        .setNombre("Administrador")
+                        .setEmail(correo)
+                        .setContraseña(password)
+                        .setTipo("Admin") // <-- Esto es lo que necesita el proxy
+                        .setDireccion("Dirección admin")
+                        .setTelefono(999999999)
+                        .build();
+
                 sesionIniciada = true;
                 break;
             }
@@ -237,7 +262,7 @@ public class Administrador {
         return sesionIniciada;
     }
 
-        private static void iniciarTienda() throws SQLException {
+    private static void iniciarTienda() throws SQLException {
 
         List<Producto> productos = productoDAO.leerTodos();
         List<Categoria> categorias = categoriaDAO.leerTodos();
@@ -290,8 +315,7 @@ public class Administrador {
         System.out.println("*** Bienvenido a la Tiendita de Don Pepe ***");
     }
 
-
-    private static void gestionarProductos() throws SQLException {
+    static void gestionarProductos() throws SQLException {
         System.out.println("\n--- Gestión de Productos ---");
         System.out.println("Seleccione una opción:");
         System.out.println("1. Agregar Producto");
@@ -324,10 +348,17 @@ public class Administrador {
         System.out.print("Stock: ");
         int stock = scanner.nextInt();
         scanner.nextLine();
+//Modificado con builder
+        Producto nuevoProducto = new ProductoBuilder()
+                .setNombre(nombre)
+                .setPrecio(precio)
+                .setDescripcion(descripcion)
+                .setCantidad(stock)
+                .build();
 
-        Producto nuevoProducto = new Producto(0, nombre, precio, descripcion, stock);
         productoDAO.crear(nuevoProducto);
         System.out.println("Producto agregado con éxito.");
+
     }
 
     private static void modificarProducto() throws SQLException {
@@ -376,7 +407,7 @@ public class Administrador {
         }
     }
 
-    private static void gestionarCategorias() throws SQLException {
+    static void gestionarCategorias() throws SQLException {
         System.out.println("\n--- Gestión de Categorías ---");
         System.out.println("Seleccione una opción:");
         System.out.println("1. Agregar Categoría");
@@ -401,7 +432,11 @@ public class Administrador {
         System.out.print("Ingrese el nombre de la nueva categoría: ");
         String nombre = scanner.nextLine();
 
-        Categoria nuevaCategoria = new Categoria(0, nombre);
+        Categoria nuevaCategoria = new CategoriaBuilder()
+                .setId(0)
+                .setNombre(nombre)
+                .build();
+
         categoriaDAO.crear(nuevaCategoria);
         System.out.println("Categoría agregada con éxito.");
     }
@@ -501,19 +536,34 @@ public class Administrador {
 
             if (carritoCompra.calcularTotal() > 0) {
                 System.out.println("Procesando pago...");
-                Pago pago = new Pago(0, carritoCompra.calcularTotal());
+                Pago pago = new PagoBuilder()
+                        .setId(0)
+                        .setMonto(carritoCompra.calcularTotal())
+                        .build();
+
                 if (!pago.verificarPago()) {
                     System.out.println("El monto del pago debe ser mayor a cero.");
                     return;
                 }
 
                 String direccionEnvio = usuarioActual.getDireccion();
-                Envio envio = new Envio(0, "En proceso", LocalDate.now(), direccionEnvio);
+                Envio envio = new EnvioBuilder()
+                        .setId(0)
+                        .setEstado("En proceso")
+                        .setFecha(LocalDate.now())
+                        .setDireccion(direccionEnvio)
+                        .build();
+
                 EnvioDAO envioDAO = new EnvioDAO();
                 envioDAO.crear(envio);
 
                 double total = carritoCompra.calcularTotal();
-                Pedido pedido = new Pedido(usuarioActual, "Pendiente", new Date(), total);
+                Pedido pedido = new PedidoBuilder()
+                        .setUsuario(usuarioActual)
+                        .setEstado("Pendiente")
+                        .setFecha(new Date())
+                        .setTotal(total)
+                        .build();
 
                 // Guardar el pedido en la base de datos
                 PedidoDAO pedidoDAO = new PedidoDAO();
@@ -571,14 +621,14 @@ public class Administrador {
         }
     }
 
-    private static void generarInforme() throws SQLException {
+    static void generarInforme() throws SQLException {
         System.out.println("\n--- Generar Informe de Ventas ---");
         InformeDAO informeDAO = new InformeDAO();
         informeDAO.generarInforme();
 
     }
 
-    private static void gestionarUsuarios() throws SQLException {
+    static void gestionarUsuarios() throws SQLException {
         Scanner scanner = new Scanner(System.in);
 
         System.out.println("=== Gestión de Usuarios ===");
@@ -623,7 +673,15 @@ public class Administrador {
                 System.out.println("Ingrese el telefono del usuario: ");
                 int telefono = scanner.nextInt();
 
-                Usuario usuario = new Usuario(0, nombre, email, contraseña, tipo, direccion, telefono);
+                Usuario usuario = new UsuarioBuilder()
+                        .setId(0)
+                        .setNombre(nombre)
+                        .setEmail(email)
+                        .setContraseña(contraseña)
+                        .setTipo(tipo)
+                        .setDireccion(direccion)
+                        .setTelefono(telefono)
+                        .build();
                 usuarioDAO.crear(usuario);
 
                 System.out.println("Usuario agregado con éxito.");
