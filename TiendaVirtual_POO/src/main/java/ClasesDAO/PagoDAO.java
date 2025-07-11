@@ -14,10 +14,9 @@ public class PagoDAO {
 
     private final CConexion conexion;
 
-    public PagoDAO() {
-        this.conexion = new CConexion();
+     public PagoDAO() throws SQLException {
+        this.conexion = CConexion.getInstancia();   // ← Singleton
     }
-
     // Método para crear un nuevo pago en la base de datos
     public boolean crear(Pago pago) throws SQLException {
         String sql = "INSERT INTO Pago (id_Pago, monto, fechaPago) VALUES (?, ?, ?)";

@@ -14,8 +14,8 @@ public class InformeDAO {
 
     private final CConexion conexion;
 
-    public InformeDAO() {
-        this.conexion = new CConexion();
+    public InformeDAO() throws SQLException {
+        this.conexion = CConexion.getInstancia();   // ← Singleton
     }
 
     // Método para calcular el total de ganancias de todos los pedidos
@@ -60,43 +60,39 @@ public class InformeDAO {
 
     // Método para generar un informe general en formato de texto
     public String generarInforme() throws SQLException {
-    // Calcular los datos necesarios
-    double totalGanancias = calcularTotalGanancias();
-    double igv = calcularIGV();
-    int totalPedidos = contarTotalPedidos();
-    java.sql.Timestamp fechaGeneracion = new java.sql.Timestamp(System.currentTimeMillis());
+        // Calcular los datos necesarios
+        double totalGanancias = calcularTotalGanancias();
+        double igv = calcularIGV();
+        int totalPedidos = contarTotalPedidos();
+        java.sql.Timestamp fechaGeneracion = new java.sql.Timestamp(System.currentTimeMillis());
 
+        // Crear el formato del informe
+        String informe = "----- Informe de Ventas -----\n"
+                + "Total de Ganancias: $" + String.format("%.2f", totalGanancias) + "\n"
+                + "IGV (18%): $" + String.format("%.2f", igv) + "\n"
+                + "Total de Pedidos: " + totalPedidos + "\n"
+                + "Fecha de Generación: " + java.time.LocalDateTime.now() + "\n"
+                + "-----------------------------";
 
-    // Crear el formato del informe
-    String informe = "----- Informe de Ventas -----\n"
-            + "Total de Ganancias: $" + String.format("%.2f", totalGanancias) + "\n"
-            + "IGV (18%): $" + String.format("%.2f", igv) + "\n"
-            + "Total de Pedidos: " + totalPedidos + "\n"
-            + "Fecha de Generación: " + java.time.LocalDateTime.now() + "\n"
-            + "-----------------------------";
+        // Mostrar el informe en consola
+        System.out.println(informe);
 
-    // Mostrar el informe en consola
-    System.out.println(informe);
+        // Guardar el informe en la base de datos
+        String sql = "INSERT INTO Informe (total_ganancias, igv, total_pedidos, fecha_generacion) VALUES (?, ?, ?, ?)";
+        try (Connection conn = conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setDouble(1, totalGanancias);
+            stmt.setDouble(2, igv);
+            stmt.setInt(3, totalPedidos);
+            stmt.setTimestamp(4, fechaGeneracion);
+            stmt.executeUpdate();
+            System.out.println("El informe ha sido registrado en la base de datos.");
+        } catch (SQLException e) {
+            System.out.println("Error al guardar el informe: " + e.getMessage());
+            throw e;
+        }
 
-    // Guardar el informe en la base de datos
-    String sql = "INSERT INTO Informe (total_ganancias, igv, total_pedidos, fecha_generacion) VALUES (?, ?, ?, ?)";
-    try (Connection conn = conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-        stmt.setDouble(1, totalGanancias);
-        stmt.setDouble(2, igv);
-        stmt.setInt(3, totalPedidos);
-        stmt.setTimestamp(4, fechaGeneracion);
-        stmt.executeUpdate();
-        System.out.println("El informe ha sido registrado en la base de datos.");
-    } catch (SQLException e) {
-        System.out.println("Error al guardar el informe: " + e.getMessage());
-        throw e;
+        return informe;
     }
-
-    return informe;
-}
-
-
-    
 
     public List<Informe> leerTodosLosInformes() throws SQLException {
         String sql = "SELECT * FROM Informe";

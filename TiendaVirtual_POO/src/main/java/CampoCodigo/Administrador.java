@@ -20,15 +20,26 @@ import java.util.function.Predicate;
 public class Administrador {
 
     private static final Scanner scanner = new Scanner(System.in);
-    private static final ProductoDAO productoDAO = new ProductoDAO();
-    private static final CategoriaDAO categoriaDAO = new CategoriaDAO();
-    private static final UsuarioDAO usuarioDAO = new UsuarioDAO();
+    private static ProductoDAO productoDAO;
+    private static CategoriaDAO categoriaDAO;
+    private static UsuarioDAO usuarioDAO;
+
+    static {
+        try {
+            productoDAO = new ProductoDAO();
+            categoriaDAO = new CategoriaDAO();
+            usuarioDAO = new UsuarioDAO();
+        } catch (SQLException e) {
+            // decide qué hacer: registrar y abortar, lanzar RuntimeException, etc.
+            throw new RuntimeException("No se pudieron inicializar los DAOs", e);
+        }
+    }
     private static final CarritoCompra carritoCompra = new CarritoCompra(1);
     private static Usuario usuarioActual = null;
     private static boolean esAdmin = false;
 
     public static void main(String[] args) throws SQLException {
-        CConexion objetoconexion = new CConexion();
+        CConexion objetoconexion = CConexion.getInstancia();
         objetoconexion.getConexion();
 
         iniciarTienda();
@@ -610,7 +621,7 @@ public class Administrador {
         System.out.println("--------------------------");
     }
 
-    public Producto buscarProducto(int idProducto) {
+    public Producto buscarProducto(int idProducto) throws SQLException {
         ProductoDAO productoDAO = new ProductoDAO();
         try {
             return productoDAO.leer(idProducto);

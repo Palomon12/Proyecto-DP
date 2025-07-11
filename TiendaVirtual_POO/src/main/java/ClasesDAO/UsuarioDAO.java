@@ -13,38 +13,37 @@ public class UsuarioDAO implements CrudDAO<Usuario> {
 
     private final CConexion conexion;
 
-    public UsuarioDAO() {
-        this.conexion = new CConexion();
+    public UsuarioDAO() throws SQLException {
+        this.conexion = CConexion.getInstancia();   // ← Singleton
     }
 
     @Override
-public boolean crear(Usuario usuario) throws SQLException {
-    String sql = "INSERT INTO Usuario (nombre, email, contraseña, tipo, direccion, telefono) VALUES (?, ?, ?, ?, ?, ?)";
+    public boolean crear(Usuario usuario) throws SQLException {
+        String sql = "INSERT INTO Usuario (nombre, email, contraseña, tipo, direccion, telefono) VALUES (?, ?, ?, ?, ?, ?)";
 
-    try (Connection conn = conexion.getConexion();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-        stmt.setString(1, usuario.getNombre());
-        stmt.setString(2, usuario.getEmail());
-        stmt.setString(3, usuario.getContraseña());
-        stmt.setString(4, usuario.getTipo());
-        stmt.setString(5, usuario.getDireccion());
-        stmt.setInt(6, usuario.getTelefono());
+            stmt.setString(1, usuario.getNombre());
+            stmt.setString(2, usuario.getEmail());
+            stmt.setString(3, usuario.getContraseña());
+            stmt.setString(4, usuario.getTipo());
+            stmt.setString(5, usuario.getDireccion());
+            stmt.setInt(6, usuario.getTelefono());
 
-        int rowsAffected = stmt.executeUpdate();
+            int rowsAffected = stmt.executeUpdate();
 
-        if (rowsAffected > 0) {
-            System.out.println("Usuario " + usuario.getNombre() + " guardado correctamente.");
-            return true;
-        } else {
-            System.out.println("Error al guardar el usuario.");
-            return false;
+            if (rowsAffected > 0) {
+                System.out.println("Usuario " + usuario.getNombre() + " guardado correctamente.");
+                return true;
+            } else {
+                System.out.println("Error al guardar el usuario.");
+                return false;
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al guardar el usuario: " + e.getMessage());
+            throw e;
         }
-    } catch (SQLException e) {
-        System.out.println("Error al guardar el usuario: " + e.getMessage());
-        throw e;
     }
-}
 
     @Override
     public Usuario leer(int id) throws SQLException {
@@ -58,7 +57,7 @@ public boolean crear(Usuario usuario) throws SQLException {
                         rs.getString("nombre"),
                         rs.getString("email"),
                         rs.getString("contraseña"),
-                        rs.getString("tipo"), 
+                        rs.getString("tipo"),
                         rs.getString("direccion"),
                         rs.getInt("telefono")
                 );
@@ -101,7 +100,7 @@ public boolean crear(Usuario usuario) throws SQLException {
                         rs.getString("nombre"),
                         rs.getString("email"),
                         rs.getString("contraseña"),
-                        rs.getString("tipo"), 
+                        rs.getString("tipo"),
                         rs.getString("direccion"),
                         rs.getInt("telefono")
                 );
@@ -125,27 +124,26 @@ public boolean crear(Usuario usuario) throws SQLException {
             return stmt.executeUpdate() > 0;
         }
     }
-    
-    public Usuario obtenerUsuarioPorEmail(String email) throws SQLException {
-    String sql = "SELECT * FROM Usuario WHERE email = ?";
-    try (Connection conn = conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-        stmt.setString(1, email);
-        ResultSet rs = stmt.executeQuery();
-        if (rs.next()) {
-            return new Usuario(
-                    rs.getInt("id_usuario"),
-                    rs.getString("nombre"),
-                    rs.getString("email"),
-                    rs.getString("contraseña"),
-                    rs.getString("tipo"),
-                    rs.getString("direccion"),
-                    rs.getInt("telefono")
-            );
-        }
-    }
-    return null; // Usuario no encontrado
-}
 
+    public Usuario obtenerUsuarioPorEmail(String email) throws SQLException {
+        String sql = "SELECT * FROM Usuario WHERE email = ?";
+        try (Connection conn = conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, email);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return new Usuario(
+                        rs.getInt("id_usuario"),
+                        rs.getString("nombre"),
+                        rs.getString("email"),
+                        rs.getString("contraseña"),
+                        rs.getString("tipo"),
+                        rs.getString("direccion"),
+                        rs.getInt("telefono")
+                );
+            }
+        }
+        return null; // Usuario no encontrado
+    }
 
     @Override
     public boolean eliminar(int id) throws SQLException {
@@ -168,5 +166,5 @@ public boolean crear(Usuario usuario) throws SQLException {
         }
         return false;
     }
-    
+
 }

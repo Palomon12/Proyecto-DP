@@ -10,8 +10,8 @@ public class ProductoDAOProxy implements CrudDAO<Producto> {
     private final ProductoDAO productoDAO;
     private final Usuario usuarioActual;
 
-    public ProductoDAOProxy(Usuario usuario) {
-        this.productoDAO = new ProductoDAO();
+    public ProductoDAOProxy(Usuario usuario) throws SQLException {
+        this.productoDAO = new ProductoDAO() ;
         this.usuarioActual = usuario;
     }
 

@@ -13,45 +13,41 @@ public class ProductoDAO implements CrudDAO<Producto> {
 
     private final CConexion conexion;
 
-    public ProductoDAO() {
-        this.conexion = new CConexion();
+     public ProductoDAO() throws SQLException {
+        this.conexion = CConexion.getInstancia();   // ← Singleton
     }
 
     @Override
-public boolean crear(Producto producto) throws SQLException {
-    String getMaxIdSql = "SELECT MAX(id_producto) FROM Producto";
-    String insertSql = "INSERT INTO Producto (id_producto, nombre, precio, descripcion, cantidad) VALUES (?, ?, ?, ?, ?)";
+    public boolean crear(Producto producto) throws SQLException {
+        String getMaxIdSql = "SELECT MAX(id_producto) FROM Producto";
+        String insertSql = "INSERT INTO Producto (id_producto, nombre, precio, descripcion, cantidad) VALUES (?, ?, ?, ?, ?)";
 
-    try (
-        Connection conn = conexion.getConexion();
-        PreparedStatement maxIdStmt = conn.prepareStatement(getMaxIdSql);
-        PreparedStatement insertStmt = conn.prepareStatement(insertSql)
-    ) {
-        // Obtener el siguiente ID disponible
-        ResultSet rs = maxIdStmt.executeQuery();
-        int nextId = 1;
-        if (rs.next()) {
-            nextId = rs.getInt(1) + 1;
+        try (
+                Connection conn = conexion.getConexion(); PreparedStatement maxIdStmt = conn.prepareStatement(getMaxIdSql); PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
+            // Obtener el siguiente ID disponible
+            ResultSet rs = maxIdStmt.executeQuery();
+            int nextId = 1;
+            if (rs.next()) {
+                nextId = rs.getInt(1) + 1;
+            }
+
+            producto.setId_producto(nextId); // Establecer el nuevo ID
+
+            // Insertar producto
+            insertStmt.setInt(1, producto.getId_producto());
+            insertStmt.setString(2, producto.getNombre());
+            insertStmt.setDouble(3, producto.getPrecio());
+            insertStmt.setString(4, producto.getDescripcion());
+            insertStmt.setInt(5, producto.getCantidad());
+
+            insertStmt.executeUpdate();
+            System.out.println("Producto " + producto.getNombre() + " (ID: " + nextId + ") guardado correctamente.");
+            return true;
+        } catch (SQLException e) {
+            System.out.println("Error al guardar el producto: " + e.getMessage());
+            throw e;
         }
-
-        producto.setId_producto(nextId); // Establecer el nuevo ID
-
-        // Insertar producto
-        insertStmt.setInt(1, producto.getId_producto());
-        insertStmt.setString(2, producto.getNombre());
-        insertStmt.setDouble(3, producto.getPrecio());
-        insertStmt.setString(4, producto.getDescripcion());
-        insertStmt.setInt(5, producto.getCantidad());
-
-        insertStmt.executeUpdate();
-        System.out.println("Producto " + producto.getNombre() + " (ID: " + nextId + ") guardado correctamente.");
-        return true;
-    } catch (SQLException e) {
-        System.out.println("Error al guardar el producto: " + e.getMessage());
-        throw e;
     }
-}
-
 
     @Override
     public Producto leer(int id) throws SQLException {

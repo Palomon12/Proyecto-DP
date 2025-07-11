@@ -10,7 +10,11 @@ import java.sql.SQLException;
 
 public class CarritoCompraDAO {
 
-    private final CConexion conexion = new CConexion();
+    private final CConexion conexion;
+
+    public CarritoCompraDAO() throws SQLException {
+        this.conexion = CConexion.getInstancia();   // ← Singleton
+    }
 
     // Método para agregar un producto al carrito de un cliente
     public boolean agregarProducto(int idCliente, Producto producto, int cantidad) {
@@ -32,36 +36,34 @@ public class CarritoCompraDAO {
     }
 
     public CarritoCompra leerCarrito(int idCliente) {
-    String sql = "SELECT Producto.*, Carrito.cantidad FROM Carrito " +
-                 "JOIN Producto ON Carrito.id_producto = Producto.id_producto " +
-                 "WHERE Carrito.id_cliente = ?";
-    CarritoCompra carrito = new CarritoCompra(idCliente); // inicializar con id_cliente o ID_carrito, según tu implementación.
+        String sql = "SELECT Producto.*, Carrito.cantidad FROM Carrito "
+                + "JOIN Producto ON Carrito.id_producto = Producto.id_producto "
+                + "WHERE Carrito.id_cliente = ?";
+        CarritoCompra carrito = new CarritoCompra(idCliente); // inicializar con id_cliente o ID_carrito, según tu implementación.
 
-    try (Connection conn = conexion.getConexion();
-         PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-        stmt.setInt(1, idCliente);
-        ResultSet rs = stmt.executeQuery();
+            stmt.setInt(1, idCliente);
+            ResultSet rs = stmt.executeQuery();
 
-        while (rs.next()) {
-            Producto producto = new Producto();
-            producto.setId_producto(rs.getInt("id_producto"));
-            producto.setNombre(rs.getString("nombre"));
-            producto.setPrecio(rs.getDouble("precio"));
-            producto.setDescripcion(rs.getString("descripcion"));
-            int cantidad = rs.getInt("cantidad");
+            while (rs.next()) {
+                Producto producto = new Producto();
+                producto.setId_producto(rs.getInt("id_producto"));
+                producto.setNombre(rs.getString("nombre"));
+                producto.setPrecio(rs.getDouble("precio"));
+                producto.setDescripcion(rs.getString("descripcion"));
+                int cantidad = rs.getInt("cantidad");
 
-            // Método modificado para agregar el producto con cantidad
-            carrito.agregarAlCarrito(producto, cantidad); 
+                // Método modificado para agregar el producto con cantidad
+                carrito.agregarAlCarrito(producto, cantidad);
+            }
+            System.out.println("Carrito leído exitosamente.");
+
+        } catch (SQLException e) {
+            System.out.println("Error al leer carrito: " + e.getMessage());
         }
-        System.out.println("Carrito leído exitosamente.");
-
-    } catch (SQLException e) {
-        System.out.println("Error al leer carrito: " + e.getMessage());
+        return carrito;
     }
-    return carrito;
-}
-
 
     // Método para actualizar la cantidad de un producto en el carrito
     public boolean actualizarCantidad(int idCliente, Producto producto, int nuevaCantidad) {

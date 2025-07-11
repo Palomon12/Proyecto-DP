@@ -13,8 +13,8 @@ public class CategoriaDAO implements CrudDAO<Categoria> {
 
     private final CConexion conexion;
 
-    public CategoriaDAO() {
-        this.conexion = new CConexion();
+     public CategoriaDAO() throws SQLException {
+        this.conexion = CConexion.getInstancia();   // ← Singleton
     }
 
     @Override

@@ -2,49 +2,77 @@ package CampoCodigo;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.*;
 import java.util.Properties;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
 
-public class CConexion {
-    private static Connection conexion;
-    private static boolean mensajeMostrado = false; // Nuevo indicador
+/**
+ * Conexión única y reutilizable a la BD (Patrón Singleton).
+ */
+public final class CConexion {
 
-    public static Connection getConexion() throws SQLException {
+    private static volatile CConexion instancia;      // 1) única instancia
+    private Connection conexion;                      // 2) estado interno
+    private static final Object lock = new Object();  // 3) para threads
+    private static boolean mensajeMostrado = false;   // Nuevo indicador
+
+    /**
+     * Constructor privado: evita new desde fuera
+     */
+    private CConexion() throws SQLException {
+        inicializarConexion();
+    }
+
+    /**
+     * Punto de acceso global
+     */
+    public static CConexion getInstancia() throws SQLException {
+        if (instancia == null) {          // 1ᵉʳ chequeo (rápido)
+            synchronized (lock) {         // bloqueamos solo si es necesario
+                if (instancia == null) {  // 2ᵈᵒ chequeo (seguro)
+                    instancia = new CConexion();
+                }
+            }
+        }
+        return instancia;
+    }
+
+    /**
+     * Devuelve la conexión viva; la abre si se cerró.
+     */
+    public Connection getConexion() throws SQLException {
         if (conexion == null || conexion.isClosed()) {
             inicializarConexion();
         }
         return conexion;
     }
 
-    private static void inicializarConexion() throws SQLException {
+    /* ------------------ helpers privados ------------------ */
+    /**
+     * Carga config.properties y abre la conexión
+     */
+    private void inicializarConexion() throws SQLException {
         Properties props = new Properties();
-        try (InputStream input = CConexion.class.getClassLoader().getResourceAsStream("config.properties")) {
+        try (InputStream input
+                = CConexion.class.getClassLoader().getResourceAsStream("config.properties")) {
+
             if (input == null) {
-                throw new SQLException("Error al cargar el archivo de configuración: config.properties no encontrado.");
+                throw new SQLException("config.properties no encontrado.");
             }
             props.load(input);
-        } catch (IOException e) {
-            throw new SQLException("No se pudo cargar la configuración de la base de datos: " + e.getMessage());
-        }
 
-        String url = props.getProperty("db.url");
-        String username = props.getProperty("db.username");
-        String password = props.getProperty("db.password");
+            String url = props.getProperty("db.url");
+            String username = props.getProperty("db.username");
+            String password = props.getProperty("db.password");
 
-        try {
-            
             conexion = DriverManager.getConnection(url, username, password);
 
-            // Solo imprimir el mensaje la primera vez
             if (!mensajeMostrado) {
-                System.out.println("Conexión inicial establecida con la base de datos.");
-                mensajeMostrado = true; // Evitar que el mensaje vuelva a mostrarse
+                System.out.println("Conexión BD establecida (Singleton).");
+                mensajeMostrado = true;
             }
-        } catch (SQLException e) {
-            System.err.println("Error al conectar a la base de datos: " + e.getMessage());
-            e.printStackTrace();
+
+        } catch (IOException e) {
+            throw new SQLException("No se pudo leer config.properties", e);
         }
     }
 }

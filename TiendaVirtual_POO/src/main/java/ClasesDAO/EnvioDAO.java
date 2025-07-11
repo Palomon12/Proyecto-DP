@@ -13,8 +13,8 @@ public class EnvioDAO {
 
     private final CConexion conexion;
 
-    public EnvioDAO() {
-        this.conexion = new CConexion();
+     public EnvioDAO() throws SQLException {
+        this.conexion = CConexion.getInstancia();   // ← Singleton
     }
 
     // Método para crear un nuevo envío en la base de datos
