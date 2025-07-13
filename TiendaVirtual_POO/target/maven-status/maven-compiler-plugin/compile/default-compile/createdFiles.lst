@@ -10,6 +10,7 @@ CampoCodigo\builders\PagoBuilder.class
 CampoCodigo\builders\CategoriaBuilder.class
 CampoCodigo\builders\UsuarioBuilder.class
 ClasesDAO\CarritoCompraDAO.class
+CampoCodigo\CarritoLogger.class
 CampoCodigo\AdministradorProxy.class
 ClasesDAO\CrudDAO.class
 CampoCodigo\builders\EnvioBuilder.class
@@ -22,6 +23,7 @@ CampoCodigo\Usuario.class
 CampoCodigo\Envio.class
 CampoCodigo\Pago.class
 ClasesDAO\CategoriaDAO.class
+CampoCodigo\ObservadorCarrito.class
 ClasesDAO\UsuarioDAO.class
 CampoCodigo\builders\PedidoBuilder.class
 ClasesDAO\PagoDAO.class
