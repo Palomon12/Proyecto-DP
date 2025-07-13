@@ -23,18 +23,21 @@ public class Administrador {
     private static ProductoDAO productoDAO;
     private static CategoriaDAO categoriaDAO;
     private static UsuarioDAO usuarioDAO;
+    private static final CarritoCompra carritoCompra = new CarritoCompra(1);
 
     static {
         try {
             productoDAO = new ProductoDAO();
             categoriaDAO = new CategoriaDAO();
             usuarioDAO = new UsuarioDAO();
+            carritoCompra.agregarObservador(new CarritoLogger());
+
         } catch (SQLException e) {
-            // decide qué hacer: registrar y abortar, lanzar RuntimeException, etc.
+
             throw new RuntimeException("No se pudieron inicializar los DAOs", e);
         }
     }
-    private static final CarritoCompra carritoCompra = new CarritoCompra(1);
+
     private static Usuario usuarioActual = null;
     private static boolean esAdmin = false;
 

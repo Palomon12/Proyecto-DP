@@ -4,9 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CarritoCompra {
+
     private int idCarrito;
     private final List<CarritoItem> items; // Lista de items en el carrito
     private double total;
+    private final List<ObservadorCarrito> observadores = new ArrayList<>();
 
     // Constructor
     public CarritoCompra(int idCarrito) {
@@ -32,6 +34,20 @@ public class CarritoCompra {
         return total;
     }
 
+    public void agregarObservador(ObservadorCarrito obs) {
+        observadores.add(obs);
+    }
+
+    public void eliminarObservador(ObservadorCarrito obs) {
+        observadores.remove(obs);
+    }
+
+    private void notificarObservadores() {
+        for (ObservadorCarrito obs : observadores) {
+            obs.actualizar(this);
+        }
+    }
+
     // Agregar un producto al carrito
     public void agregarAlCarrito(Producto producto, int cantidad) {
         if (cantidad <= 0) {
@@ -41,7 +57,7 @@ public class CarritoCompra {
 
         // Verificar si el producto ya existe en el carrito
         for (CarritoItem item : items) {
-            if (item.getProducto().getId_producto()== producto.getId_producto()) {
+            if (item.getProducto().getId_producto() == producto.getId_producto()) {
                 item.setCantidad(item.getCantidad() + cantidad); // Actualizar cantidad
                 calcularTotal();
                 System.out.println("Producto " + producto.getNombre() + " actualizado en el carrito con cantidad: " + item.getCantidad());
@@ -53,6 +69,9 @@ public class CarritoCompra {
         items.add(new CarritoItem(producto, cantidad));
         calcularTotal();
         System.out.println("Producto " + producto.getNombre() + " agregado al carrito con cantidad: " + cantidad);
+        // Al final de agregarAlCarrito
+        notificarObservadores();
+
     }
 
     // Vaciar el carrito
@@ -60,6 +79,9 @@ public class CarritoCompra {
         items.clear();
         total = 0.0;
         System.out.println("El carrito ha sido vaciado.");
+        // Al final de vaciarCarrito
+        notificarObservadores();
+
     }
 
     // Calcular el total del carrito
